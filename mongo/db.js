@@ -7,7 +7,11 @@ const client = new MongoClient(process.env.MONGODB_CONECTION_STRING);
 const db = client.db("myFirstDatabase");
 const collection = db.collection("kpfilms");
 
+const limitItemsOnSearchPage = 50;
+
 async function search(searchQuery, searchPage) {
+    const skipedItems = searchPage * limitItemsOnSearchPage;
+
     try {
         const pipeline = [
             {
@@ -15,9 +19,38 @@ async function search(searchQuery, searchPage) {
                     index: "Names Index",
                     text: {
                         query: `${searchQuery}`,
-                        path: {
-                            wildcard: "*",
-                        },
+                        path: "name",
+                    },
+                },
+            },
+            { $sort: { count: -1 } },
+            { $skip: skipedItems },
+            { $limit: limitItemsOnSearchPage },
+            { $project: { _id: 0, id: 1, name: 1 } },
+        ];
+
+        const startTime = new Date();
+
+        const results = await collection.aggregate(pipeline).toArray();
+
+        console.log("Время запроса " + (new Date() - startTime) / 1000 + "s");
+
+        return results;
+    } catch (e) {
+        console.log(e);
+        close();
+    }
+}
+async function autocomplete(autocompleteQuery) {
+    try {
+        const pipeline = [
+            {
+                $search: {
+                    index: "Names Autocomplete",
+                    autocomplete: {
+                        query: `${autocompleteQuery}`,
+                        path: "name",
+                        tokenOrder: "any",
                     },
                 },
             },
@@ -46,6 +79,7 @@ async function connect() {
         console.log(e);
     }
 }
+
 async function close() {
     try {
         await client.close();
@@ -55,4 +89,4 @@ async function close() {
     }
 }
 
-module.exports = { connect, close, search };
+module.exports = { connect, close, autocomplete, search };

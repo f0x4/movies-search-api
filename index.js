@@ -2,16 +2,28 @@ require("dotenv").config();
 
 const cors = require("cors");
 const express = require("express");
-const { connect, close, search } = require("./mongo/db");
+const { connect, close, autocomplete, search } = require("./mongo/db");
 // const main = require("./mongoose");
 
 const port = process.env.PORT || 3000;
-const searchPageSize = process.env.SEARCH_PAGE_SIZE || 50;
 
 const app = express();
 
 app.get("/", function (req, res) {
     res.send("Hello World");
+});
+
+app.get("/autocomplete/:autocompleteQuery", function (req, res) {
+    const query = decodeURI(req.params.autocompleteQuery);
+
+    const globalStartTime = new Date();
+
+    autocomplete(query).then((results) => {
+        res.send(results);
+        console.log(
+            "Общее время " + (new Date() - globalStartTime) / 1000 + "s"
+        );
+    });
 });
 
 app.get("/search/:searchQuery", function (req, res) {
