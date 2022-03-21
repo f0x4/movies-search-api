@@ -13,32 +13,21 @@ async function search(searchQuery, searchPage) {
     const skipedItems = searchPage * limitItemsOnSearchPage;
 
     try {
-        const pipeline = [
-            {
-                $search: {
-                    index: "Names Index",
-                    text: {
-                        query: `${searchQuery}`,
-                        path: "name",
-                    },
-                },
-            },
-            { $sort: { count: -1 } },
-            { $skip: skipedItems },
-            { $limit: limitItemsOnSearchPage },
-            { $project: { _id: 0, id: 1, name: 1 } },
-        ];
-
         const startTime = new Date();
 
-        const results = await collection.aggregate(pipeline).toArray();
+        const results = await collection
+            .find({ $text: { $search: `\"${searchQuery}\"` } })
+            .sort({ count: -1 })
+            .skip(skipedItems)
+            .limit(limitItemsOnSearchPage)
+            .project({ _id: 0, id: 1, name: 1 })
+            .toArray();
 
         console.log("Время запроса " + (new Date() - startTime) / 1000 + "s");
 
         return results;
     } catch (e) {
         console.log(e);
-        close();
     }
 }
 async function autocomplete(autocompleteQuery) {
@@ -67,7 +56,6 @@ async function autocomplete(autocompleteQuery) {
         return results;
     } catch (e) {
         console.log(e);
-        close();
     }
 }
 
