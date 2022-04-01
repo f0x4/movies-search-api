@@ -13,23 +13,28 @@ async function search(searchQuery, searchPage) {
     const skipedItems = searchPage * limitItemsOnSearchPage;
 
     try {
-        const startTime = new Date();
+        const pipeline = [
+            {
+                $match: {
+                    $text: {
+                        $search: `\"${searchQuery}\"`,
+                    },
+                },
+            },
+            { $sort: { _id: 1, count: -1 } },
+            { $skip: skipedItems },
+            { $limit: limitItemsOnSearchPage },
+        ];
 
-        const results = await collection
-            .find({ $text: { $search: `\"${searchQuery}\"` } })
-            .sort({ count: -1 })
-            .skip(skipedItems)
-            .limit(limitItemsOnSearchPage)
-            .project({ _id: 0, id: 1, name: 1 })
-            .toArray();
-
-        console.log("Время запроса " + (new Date() - startTime) / 1000 + "s");
+        const results = await collection.aggregate(pipeline).toArray();
 
         return results;
     } catch (e) {
         console.log(e);
+        close();
     }
 }
+
 async function autocomplete(autocompleteQuery) {
     try {
         const pipeline = [
@@ -44,18 +49,14 @@ async function autocomplete(autocompleteQuery) {
                 },
             },
             { $limit: 10 },
-            { $project: { _id: 0, id: 1, name: 1 } },
         ];
 
-        const startTime = new Date();
-
         const results = await collection.aggregate(pipeline).toArray();
-
-        console.log("Время запроса " + (new Date() - startTime) / 1000 + "s");
 
         return results;
     } catch (e) {
         console.log(e);
+        close();
     }
 }
 
