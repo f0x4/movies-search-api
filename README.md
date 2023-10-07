@@ -1,5 +1,5 @@
 # movies-search-api
-API for movies search (full-text search, autocomplete) with NODE.JS, Express, MongoDB.
+API for movies search (full-text search, autocomplete) with Node.js, Express, MongoDB.
 
 Contains +740k films and series.
 
